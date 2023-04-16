@@ -19,7 +19,7 @@ Use the terminal or an Anaconda Prompt for the following steps:
 
 - Create the environment from the env.yml file, by entering the following command:
     ```
-    conda env create -f environment.yml
+    conda env create -f env.yml
     ```
     The first line of the yml file sets the new environment's name.
 
