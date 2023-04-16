@@ -14,5 +14,25 @@ The following techniques have been used:
  - Multiple sampling techinuqies are evaluated. The data set is split into train and test.
  - All the above said modelling techniques are tried and evaluated. The final metric used to evaluate is mean squared error.
 
+## Development environment setup
+Use the terminal or an Anaconda Prompt for the following steps:
+
+- Create the environment from the env.yml file, by entering the following command:
+    ```
+    conda env create -f environment.yml
+    ```
+    The first line of the yml file sets the new environment's name.
+
+- Activate the new environment, by entering the following command: 
+    ```
+    conda activate mle-dev
+    ```
+- Verify that the new environment was installed correctly, by entering the following command:
+    ```
+    conda env list
+    ```
+
 ## To excute the script
-python < scriptname.py >
+```
+python nonstandardcode.py
+```
