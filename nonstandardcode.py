@@ -1,8 +1,6 @@
 import os
 import tarfile
 
-# import matplotlib as mpl
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import randint
@@ -33,16 +31,12 @@ def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
     housing_tgz.close()
 
 
-# fetch_housing_data()
-
-
 def load_housing_data(housing_path=HOUSING_PATH):
     csv_path = os.path.join(housing_path, "housing.csv")
     return pd.read_csv(csv_path)
 
 
 housing = load_housing_data()
-# housing.head()
 
 
 train_set, test_set = train_test_split(housing, test_size=0.2, random_state=42)
@@ -87,7 +81,6 @@ housing = strat_train_set.copy()
 housing.plot(kind="scatter", x="longitude", y="latitude")
 housing.plot(kind="scatter", x="longitude", y="latitude", alpha=0.1)
 
-# corr_matrix = housing.corr()
 corr_matrix = housing.loc[:, housing.columns != "ocean_proximity"].corr()
 corr_matrix["median_house_value"].sort_values(ascending=False)
 housing["rooms_per_household"] = housing["total_rooms"] / housing["households"]
