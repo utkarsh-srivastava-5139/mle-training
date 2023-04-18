@@ -36,6 +36,7 @@ Use the terminal or an Anaconda Prompt for the following steps:
 ```
 python nonstandardcode.py
 ```
+
 ## To reformat the code manually
 ```
 flake8 nonstandardcode.py

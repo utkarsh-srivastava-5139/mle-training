@@ -31,9 +31,6 @@ def fetch_housing_data(housing_url=HOUSING_URL, housing_path=HOUSING_PATH):
     housing_tgz.close()
 
 
-fetch_housing_data()
-
-
 def load_housing_data(housing_path=HOUSING_PATH):
     csv_path = os.path.join(housing_path, "housing.csv")
     return pd.read_csv(csv_path)
@@ -143,7 +140,6 @@ param_distribs = {
     "n_estimators": randint(low=1, high=200),
     "max_features": randint(low=1, high=8),
 }
-
 
 forest_reg = RandomForestRegressor(random_state=42)
 rnd_search = RandomizedSearchCV(
