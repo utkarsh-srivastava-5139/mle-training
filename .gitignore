@@ -1,2 +1,13 @@
-*.pyc
 *.csv
+*.pyc
+*.xlsx
+\datasets
+\housinglib
+\.ipynb_checkpoints
+\.pytest_cache
+\dist
+\build
+\housinglib.egg-info
+*.log
+\data\raw\housing.tgz
+*.tgz
