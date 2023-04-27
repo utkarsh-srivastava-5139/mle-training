@@ -1,3 +1,5 @@
+# A simple Pytest test function that checks if the housinglib library is installed.
+
 import pytest
 
 

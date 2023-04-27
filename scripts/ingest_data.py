@@ -1,3 +1,4 @@
+# Import neccessary modules
 import argparse
 import logging
 import logging.config
@@ -7,10 +8,12 @@ import sys
 
 import housinglib as hlb
 
+# Add the parent directory of the current file to the system path
 HERE1 = op.dirname(op.abspath(__file__))
 lib_path = op.join(HERE1, "..")
 sys.path.append(lib_path)
 
+# Sets up an argument parser to accept command-line arguments when running the script
 parser = argparse.ArgumentParser(description="data folder path")
 parser.add_argument("--path", nargs="?")
 parser.add_argument("--log_level", nargs="?")
@@ -18,12 +21,15 @@ parser.add_argument("--log_path", nargs="?")
 parser.add_argument("--no_console_log", nargs="?")
 args = parser.parse_args()
 
+# Sets the data directory path, either from the command line argument or
+# from the default data/raw directory
 if args.path is None:
     HERE = op.dirname(op.abspath(__file__))
     HOUSING_PATH = op.join(HERE, "..", "data", "raw")
 else:
     HOUSING_PATH = args.path
 
+# Sets up logging related variables based on command-line arguments or defaults
 if args.log_level is None:
     log_level = "DEBUG"
 else:
@@ -41,6 +47,7 @@ if args.no_console_log is None:
 else:
     no_console_log = False
 
+# Sets up a default logging configuration
 LOGGING_DEFAULT_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -56,6 +63,7 @@ LOGGING_DEFAULT_CONFIG = {
 }
 
 
+# Function to configure the logger based on input parameters
 def configure_logger(
     logger=None, cfg=None, log_file=None, console=True, log_level="DEBUG"
 ):
@@ -87,8 +95,10 @@ logger = configure_logger(
     log_file=log_file, console=no_console_log, log_level=log_level
 )
 
+# Download the data from the github link and extract the csv data file
 hlb.load_data(HOUSING_PATH)
 
+# Split the data into train and test sets
 hlb.data_prep(HOUSING_PATH, project_path=HERE)
 
 # logs added

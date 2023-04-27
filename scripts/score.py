@@ -1,3 +1,4 @@
+# Import neccessary modules
 import argparse
 import json
 import logging
@@ -10,6 +11,7 @@ import housinglib as hlb
 
 logger = logging.getLogger(__name__)
 
+# Sets up an argument parser to accept command-line arguments when running the script
 parser = argparse.ArgumentParser(description="data folder path")
 parser.add_argument("--model_path", nargs="?")
 parser.add_argument("--data_path", nargs="?")
@@ -19,6 +21,7 @@ parser.add_argument("--log_path", nargs="?")
 parser.add_argument("--no_console_log", nargs="?")
 args = parser.parse_args()
 
+# Sets up logging related variables based on command-line arguments or defaults
 if args.log_level is None:
     log_level = "DEBUG"
 else:
@@ -36,6 +39,7 @@ if args.no_console_log is None:
 else:
     no_console_log = args.no_console_log
 
+# Sets up a default logging configuration
 LOGGING_DEFAULT_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -51,6 +55,7 @@ LOGGING_DEFAULT_CONFIG = {
 }
 
 
+# Function to configure the logger based on input parameters
 def configure_logger(
     logger=None, cfg=None, log_file=None, console=True, log_level="DEBUG"
 ):
@@ -99,14 +104,17 @@ else:
     path2 = args.data_path
 
 
+# Load the test data and the imputer used for transforming training data
 test_data, imputer = hlb.load_test_data(project_path=HERE)
 logger.info("Loaded test data")
 
+# Calculate the model's performance
 final_mse, final_rmse = hlb.model_score(final_model, test_data, imputer)
 logger.info("MSE and RMSE calculated")
 
 results = {"Mean Square Error": final_mse, "Root mean square error": final_rmse}
 
+# Save the model's performance results in results.txt file
 with open(path3 + "/results.txt", "w") as convert_file:
     convert_file.write(json.dumps(results))
 logger.info("Results are stored in the artifacts folder")

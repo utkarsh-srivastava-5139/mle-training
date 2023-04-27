@@ -1,3 +1,4 @@
+# Import neccessary modules
 import argparse
 import logging
 import logging.config
@@ -8,6 +9,7 @@ import sys
 
 import housinglib as hlb
 
+# Sets up an argument parser to accept command-line arguments when running the script
 parser = argparse.ArgumentParser(description="data folder path")
 parser.add_argument("--input_path", nargs="?")
 parser.add_argument("--output_path", nargs="?")
@@ -16,6 +18,7 @@ parser.add_argument("--log_path", nargs="?")
 parser.add_argument("--no_console_log", nargs="?")
 args = parser.parse_args()
 
+# Sets up logging related variables based on command-line arguments or defaults
 if args.log_level is None:
     log_level = "DEBUG"
 else:
@@ -45,6 +48,7 @@ if args.output_path is None:
 else:
     path = args.output_path
 
+# Sets up a default logging configuration
 LOGGING_DEFAULT_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -60,6 +64,7 @@ LOGGING_DEFAULT_CONFIG = {
 }
 
 
+# Function to configure the logger based on input parameters
 def configure_logger(
     logger=None, cfg=None, log_file=None, console=True, log_level="DEBUG"
 ):
@@ -91,6 +96,7 @@ logger = configure_logger(
     log_file=log_file, console=no_console_log, log_level=log_level
 )
 
+# Add the parent directory of the current file to the system path
 HERE1 = op.dirname(op.abspath(__file__))
 lib_path = op.join(HERE1, "..")
 sys.path.append(lib_path)
@@ -98,15 +104,16 @@ sys.path.append(lib_path)
 
 HOUSING_PATH = op.join(HERE, "..", "data", "raw")
 
+# Load the train dataset and split them into independent and dependent variables
 housing_prepared, housing_labels = hlb.load_train_data(project_path=HERE)
 logger.info("Splitting training data into X_train and y_train")
 
-# hlb.lin_reg(housing_prepared, housing_labels)
-
+# Train the random forest regression model
 final_model = hlb.random_forest(housing_prepared, housing_labels)
 logger.info("Best model trained")
 
 
+# Save the model file as a pickle file
 with open(path + "/model_pickle", "wb") as f:
     pickle.dump(final_model, f)
 logger.info("Model pickle stored in artifacts")

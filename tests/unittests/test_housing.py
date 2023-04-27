@@ -1,3 +1,6 @@
+# Test script that tests the income_cat_proportions() function
+# from the housinglib library
+
 import os.path as op
 import sys
 
@@ -12,10 +15,10 @@ data_path = op.join(HERE, "..", "testdata")
 sys.path.append(test_path)
 
 
-# @given(value=pd.read_csv("../testdata/test_data.csv"))
 value = pd.read_csv(data_path + "/test_data.csv")
 
 
+# Define a parameterized test
 @pytest.mark.parametrize("test_input,expected", [(value, [0.4, 0.4, 0.2])])
 def test_income_cat_proportions(test_input, expected):
     assert list(icp(test_input)) == expected
