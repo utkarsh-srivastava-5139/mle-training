@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>housinglib &mdash; Housing Price Prediction&#39;s Documentation 0.0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Housing Price Prediction's Documentation
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../housinglib.html">housinglib package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Housing Price Prediction's Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">housinglib</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for housinglib</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">op</span>
+<span class="kn">import</span> <span class="nn">tarfile</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">randint</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="kn">import</span> <span class="n">urllib</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">mean_absolute_error</span><span class="p">,</span> <span class="n">mean_squared_error</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GridSearchCV</span><span class="p">,</span>
+    <span class="n">RandomizedSearchCV</span><span class="p">,</span>
+    <span class="n">StratifiedShuffleSplit</span><span class="p">,</span>
+    <span class="n">train_test_split</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">sklearn.tree</span> <span class="kn">import</span> <span class="n">DecisionTreeRegressor</span>
+
+
+<div class="viewcode-block" id="fetch_housing_data"><a class="viewcode-back" href="../housinglib.html#housinglib.fetch_housing_data">[docs]</a><span class="k">def</span> <span class="nf">fetch_housing_data</span><span class="p">(</span><span class="n">housing_url</span><span class="p">,</span> <span class="n">housing_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;fetch_housing_data</span>
+
+<span class="sd">    This function fetches the data from the input url and downloads the file in the provided local path.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_url:</span>
+<span class="sd">                    link to download the dataset</span>
+<span class="sd">            housing_path:</span>
+<span class="sd">                    Path to save the datasets</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">housing_path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">tgz_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">housing_path</span><span class="p">,</span> <span class="s2">&quot;housing.tgz&quot;</span><span class="p">)</span>
+    <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">housing_url</span><span class="p">,</span> <span class="n">tgz_path</span><span class="p">)</span>
+    <span class="n">housing_tgz</span> <span class="o">=</span> <span class="n">tarfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">tgz_path</span><span class="p">)</span>
+    <span class="n">housing_tgz</span><span class="o">.</span><span class="n">extractall</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">housing_path</span><span class="p">)</span>
+    <span class="n">housing_tgz</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fetched the data from the source&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_housing_data"><a class="viewcode-back" href="../housinglib.html#housinglib.load_housing_data">[docs]</a><span class="k">def</span> <span class="nf">load_housing_data</span><span class="p">(</span><span class="n">housing_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;load_housing_data</span>
+
+<span class="sd">    This function loads the data from the in put path and returns the pandas dataframe.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_path:</span>
+<span class="sd">                    Path to save the datasets</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data_frame from the input file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">housing_path</span><span class="p">,</span> <span class="s2">&quot;housing.csv&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">csv_path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_data"><a class="viewcode-back" href="../housinglib.html#housinglib.load_data">[docs]</a><span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="n">housing_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;load_data</span>
+
+<span class="sd">    load_data function loads the data to the data/raw folder in the main folder structure.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_path:</span>
+<span class="sd">                    Path to save the datasets</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="n">DOWNLOAD_ROOT</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/ageron/handson-ml/master/&quot;</span>
+    <span class="c1"># HERE = op.dirname(op.abspath(__file__))</span>
+    <span class="n">HOUSING_PATH</span> <span class="o">=</span> <span class="n">housing_path</span>
+    <span class="n">HOUSING_URL</span> <span class="o">=</span> <span class="n">DOWNLOAD_ROOT</span> <span class="o">+</span> <span class="s2">&quot;datasets/housing/housing.tgz&quot;</span>
+    <span class="n">fetch_housing_data</span><span class="p">(</span><span class="n">HOUSING_URL</span><span class="p">,</span> <span class="n">HOUSING_PATH</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loaded housing data to respective folders&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="income_cat_proportions"><a class="viewcode-back" href="../housinglib.html#housinglib.income_cat_proportions">[docs]</a><span class="k">def</span> <span class="nf">income_cat_proportions</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;income_cat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="data_prep"><a class="viewcode-back" href="../housinglib.html#housinglib.data_prep">[docs]</a><span class="k">def</span> <span class="nf">data_prep</span><span class="p">(</span><span class="n">housing_path</span><span class="p">,</span> <span class="n">project_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;data_prep</span>
+
+<span class="sd">    data_prep function prepares the training and testing set and dumps the imputer as pickle.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_path:</span>
+<span class="sd">                    Path to save the datasets</span>
+<span class="sd">            project_path:</span>
+<span class="sd">                    Path to root directory of the project</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="n">HOUSING_PATH</span> <span class="o">=</span> <span class="n">housing_path</span>
+    <span class="n">housing</span> <span class="o">=</span> <span class="n">load_housing_data</span><span class="p">(</span><span class="n">HOUSING_PATH</span><span class="p">)</span>
+
+    <span class="n">train_set</span><span class="p">,</span> <span class="n">test_set</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">housing</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+    <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;income_cat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span>
+        <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;median_income&quot;</span><span class="p">],</span>
+        <span class="n">bins</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span>
+        <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+    <span class="p">)</span>
+
+    <span class="n">split</span> <span class="o">=</span> <span class="n">StratifiedShuffleSplit</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">train_index</span><span class="p">,</span> <span class="n">test_index</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">housing</span><span class="p">,</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;income_cat&quot;</span><span class="p">]):</span>
+        <span class="n">strat_train_set</span> <span class="o">=</span> <span class="n">housing</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">train_index</span><span class="p">]</span>
+        <span class="n">strat_test_set</span> <span class="o">=</span> <span class="n">housing</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">test_index</span><span class="p">]</span>
+
+    <span class="n">train_set</span><span class="p">,</span> <span class="n">test_set</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">housing</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+    <span class="n">compare_props</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;Overall&quot;</span><span class="p">:</span> <span class="n">income_cat_proportions</span><span class="p">(</span><span class="n">housing</span><span class="p">),</span>
+            <span class="s2">&quot;Stratified&quot;</span><span class="p">:</span> <span class="n">income_cat_proportions</span><span class="p">(</span><span class="n">strat_test_set</span><span class="p">),</span>
+            <span class="s2">&quot;Random&quot;</span><span class="p">:</span> <span class="n">income_cat_proportions</span><span class="p">(</span><span class="n">test_set</span><span class="p">),</span>
+        <span class="p">}</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+    <span class="n">compare_props</span><span class="p">[</span><span class="s2">&quot;Rand. </span><span class="si">%e</span><span class="s2">rror&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mi">100</span> <span class="o">*</span> <span class="n">compare_props</span><span class="p">[</span><span class="s2">&quot;Random&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">compare_props</span><span class="p">[</span><span class="s2">&quot;Overall&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">100</span>
+    <span class="p">)</span>
+    <span class="n">compare_props</span><span class="p">[</span><span class="s2">&quot;Strat. </span><span class="si">%e</span><span class="s2">rror&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mi">100</span> <span class="o">*</span> <span class="n">compare_props</span><span class="p">[</span><span class="s2">&quot;Stratified&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">compare_props</span><span class="p">[</span><span class="s2">&quot;Overall&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">100</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">set_</span> <span class="ow">in</span> <span class="p">(</span><span class="n">strat_train_set</span><span class="p">,</span> <span class="n">strat_test_set</span><span class="p">):</span>
+        <span class="n">set_</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;income_cat&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">housing</span> <span class="o">=</span> <span class="n">strat_train_set</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">corr_matrix</span> <span class="o">=</span> <span class="n">housing</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="n">housing</span><span class="o">.</span><span class="n">columns</span> <span class="o">!=</span> <span class="s2">&quot;ocean_proximity&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span>
+    <span class="n">corr_matrix</span><span class="p">[</span><span class="s2">&quot;median_house_value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;rooms_per_household&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;total_rooms&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;households&quot;</span><span class="p">]</span>
+    <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;bedrooms_per_room&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;total_bedrooms&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;total_rooms&quot;</span><span class="p">]</span>
+    <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;population_per_household&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;population&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">housing</span><span class="p">[</span><span class="s2">&quot;households&quot;</span><span class="p">]</span>
+
+    <span class="n">housing</span> <span class="o">=</span> <span class="n">strat_train_set</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+        <span class="s2">&quot;median_house_value&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>  <span class="c1"># drop labels for training set</span>
+    <span class="n">housing_labels</span> <span class="o">=</span> <span class="n">strat_train_set</span><span class="p">[</span><span class="s2">&quot;median_house_value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">imputer</span> <span class="o">=</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">)</span>
+
+    <span class="n">housing_num</span> <span class="o">=</span> <span class="n">housing</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;ocean_proximity&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">imputer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">housing_num</span><span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">imputer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">housing_num</span><span class="p">)</span>
+
+    <span class="n">housing_tr</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">housing_num</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">housing</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;rooms_per_household&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;total_rooms&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;households&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;bedrooms_per_room&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;total_bedrooms&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;total_rooms&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;population_per_household&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;population&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">housing_tr</span><span class="p">[</span><span class="s2">&quot;households&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">housing_cat</span> <span class="o">=</span> <span class="n">housing</span><span class="p">[[</span><span class="s2">&quot;ocean_proximity&quot;</span><span class="p">]]</span>
+    <span class="n">housing_prepared</span> <span class="o">=</span> <span class="n">housing_tr</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">housing_cat</span><span class="p">,</span> <span class="n">drop_first</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Prepared training and testing set for the models&quot;</span><span class="p">)</span>
+
+    <span class="n">artifact_path</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_path</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;artifacts&quot;</span><span class="p">)</span>
+
+    <span class="c1"># save the imputer</span>
+    <span class="kn">from</span> <span class="nn">pickle</span> <span class="kn">import</span> <span class="n">dump</span>
+
+    <span class="n">dump</span><span class="p">(</span><span class="n">imputer</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">artifact_path</span><span class="si">}</span><span class="s2">/imputer.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+
+    <span class="n">processed_data_path</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_path</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;processed&quot;</span><span class="p">)</span>
+
+    <span class="n">train_set</span> <span class="o">=</span> <span class="n">housing_prepared</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">train_set</span><span class="p">[</span><span class="n">housing_labels</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">housing_labels</span><span class="o">.</span><span class="n">values</span>
+
+    <span class="n">train_set</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">processed_data_path</span><span class="p">,</span> <span class="s2">&quot;train_set.csv&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">strat_test_set</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">processed_data_path</span><span class="p">,</span> <span class="s2">&quot;test_set.csv&quot;</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="load_train_data"><a class="viewcode-back" href="../housinglib.html#housinglib.load_train_data">[docs]</a><span class="k">def</span> <span class="nf">load_train_data</span><span class="p">(</span><span class="n">project_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;load_train_data</span>
+
+<span class="sd">    load_train_data function loads the training data. It returns the X_train and y_train subsets.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            project_path:</span>
+<span class="sd">                    Path to root directory of the project</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    housing_prepared, housing_labels</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">processed_data_path</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_path</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;processed&quot;</span><span class="p">)</span>
+
+    <span class="n">train_set</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">processed_data_path</span><span class="p">,</span> <span class="s2">&quot;train_set.csv&quot;</span><span class="p">))</span>
+    <span class="n">housing_prepared</span> <span class="o">=</span> <span class="n">train_set</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;median_house_value&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">housing_labels</span> <span class="o">=</span> <span class="n">train_set</span><span class="p">[</span><span class="s2">&quot;median_house_value&quot;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span></div>
+
+
+<div class="viewcode-block" id="lin_reg"><a class="viewcode-back" href="../housinglib.html#housinglib.lin_reg">[docs]</a><span class="k">def</span> <span class="nf">lin_reg</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;lin_reg</span>
+
+<span class="sd">    Trains the linear regression model</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_prepared:</span>
+<span class="sd">                    prepared dataset for training.</span>
+<span class="sd">            housing_labels:</span>
+<span class="sd">                    Labels of the data frame.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    RMSE, MAE.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="n">lin_reg</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
+    <span class="n">lin_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">)</span>
+    <span class="n">housing_predictions</span> <span class="o">=</span> <span class="n">lin_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">)</span>
+    <span class="n">lin_mse</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">housing_labels</span><span class="p">,</span> <span class="n">housing_predictions</span><span class="p">)</span>
+    <span class="n">lin_rmse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">lin_mse</span><span class="p">)</span>
+    <span class="n">lin_mae</span> <span class="o">=</span> <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">housing_labels</span><span class="p">,</span> <span class="n">housing_predictions</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Trained linear regression model&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;rmse&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">lin_rmse</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="s2">&quot;mae&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">lin_mae</span><span class="p">,</span> <span class="mi">2</span><span class="p">)}</span></div>
+
+
+<div class="viewcode-block" id="desc_tree"><a class="viewcode-back" href="../housinglib.html#housinglib.desc_tree">[docs]</a><span class="k">def</span> <span class="nf">desc_tree</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;desc_tree</span>
+
+<span class="sd">    This function trains the data on the decision tree regressor.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_prepared:</span>
+<span class="sd">                    prepared dataset for training.</span>
+<span class="sd">            housing_labels:</span>
+<span class="sd">                    Labels of the data frame.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    RMSE, MAE.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tree_reg</span> <span class="o">=</span> <span class="n">DecisionTreeRegressor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">tree_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">)</span>
+
+    <span class="n">housing_predictions</span> <span class="o">=</span> <span class="n">tree_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">)</span>
+    <span class="n">tree_mse</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">housing_labels</span><span class="p">,</span> <span class="n">housing_predictions</span><span class="p">)</span>
+    <span class="n">tree_rmse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">tree_mse</span><span class="p">)</span>
+    <span class="n">tree_mae</span> <span class="o">=</span> <span class="n">mean_absolute_error</span><span class="p">(</span><span class="n">housing_labels</span><span class="p">,</span> <span class="n">housing_predictions</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;rmse&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">tree_rmse</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="s2">&quot;mae&quot;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">tree_mae</span><span class="p">,</span> <span class="mi">4</span><span class="p">)}</span></div>
+
+
+<div class="viewcode-block" id="random_forest"><a class="viewcode-back" href="../housinglib.html#housinglib.random_forest">[docs]</a><span class="k">def</span> <span class="nf">random_forest</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;random_forest</span>
+
+<span class="sd">    This function trains the data on the random foreset regressor for different params.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            housing_prepared:</span>
+<span class="sd">                    prepared dataset for training.</span>
+<span class="sd">            housing_labels:</span>
+<span class="sd">                    Labels of the data frame.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    final_model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">param_distribs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">200</span><span class="p">),</span>
+        <span class="s2">&quot;max_features&quot;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">8</span><span class="p">),</span>
+    <span class="p">}</span>
+
+    <span class="n">forest_reg</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">rnd_search</span> <span class="o">=</span> <span class="n">RandomizedSearchCV</span><span class="p">(</span>
+        <span class="n">forest_reg</span><span class="p">,</span>
+        <span class="n">param_distributions</span><span class="o">=</span><span class="n">param_distribs</span><span class="p">,</span>
+        <span class="n">n_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">scoring</span><span class="o">=</span><span class="s2">&quot;neg_mean_squared_error&quot;</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">rnd_search</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">)</span>
+
+    <span class="n">param_grid</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c1"># try 12 (3×4) combinations of hyperparameters</span>
+        <span class="p">{</span><span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">],</span> <span class="s2">&quot;max_features&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">8</span><span class="p">]},</span>
+        <span class="c1"># then try 6 (2×3) combinations with bootstrap set as False</span>
+        <span class="p">{</span><span class="s2">&quot;bootstrap&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="s2">&quot;n_estimators&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="s2">&quot;max_features&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]},</span>
+    <span class="p">]</span>
+
+    <span class="n">forest_reg</span> <span class="o">=</span> <span class="n">RandomForestRegressor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="c1"># train across 5 folds, that&#39;s a total of (12+6)*5=90 rounds of training</span>
+    <span class="n">grid_search</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span>
+        <span class="n">forest_reg</span><span class="p">,</span>
+        <span class="n">param_grid</span><span class="p">,</span>
+        <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">scoring</span><span class="o">=</span><span class="s2">&quot;neg_mean_squared_error&quot;</span><span class="p">,</span>
+        <span class="n">return_train_score</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">grid_search</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">housing_prepared</span><span class="p">,</span> <span class="n">housing_labels</span><span class="p">)</span>
+
+    <span class="c1"># best_param = grid_search.best_params_</span>
+    <span class="c1"># cvres = grid_search.cv_results_</span>
+
+    <span class="n">feature_importances</span> <span class="o">=</span> <span class="n">grid_search</span><span class="o">.</span><span class="n">best_estimator_</span><span class="o">.</span><span class="n">feature_importances_</span>
+    <span class="nb">sorted</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">feature_importances</span><span class="p">,</span> <span class="n">housing_prepared</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">final_model</span> <span class="o">=</span> <span class="n">grid_search</span><span class="o">.</span><span class="n">best_estimator_</span>
+
+    <span class="k">return</span> <span class="n">final_model</span></div>
+
+
+<div class="viewcode-block" id="load_test_data"><a class="viewcode-back" href="../housinglib.html#housinglib.load_test_data">[docs]</a><span class="k">def</span> <span class="nf">load_test_data</span><span class="p">(</span><span class="n">project_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;load_test_data</span>
+
+<span class="sd">    This function load the test data and the imputer used while preparing train data.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            project_path:</span>
+<span class="sd">                    Path to root directory of the project</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    test_set, imputer</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">processed_data_path</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_path</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;processed&quot;</span><span class="p">)</span>
+    <span class="n">artifact_path</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">project_path</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;artifacts&quot;</span><span class="p">)</span>
+
+    <span class="kn">from</span> <span class="nn">pickle</span> <span class="kn">import</span> <span class="n">load</span>
+
+    <span class="n">imputer</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">artifact_path</span><span class="si">}</span><span class="s2">/imputer.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+
+    <span class="n">test_set</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">processed_data_path</span><span class="p">,</span> <span class="s2">&quot;test_set.csv&quot;</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">test_set</span><span class="p">,</span> <span class="n">imputer</span></div>
+
+
+<div class="viewcode-block" id="model_score"><a class="viewcode-back" href="../housinglib.html#housinglib.model_score">[docs]</a><span class="k">def</span> <span class="nf">model_score</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_data</span><span class="p">,</span> <span class="n">imputer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;model_score</span>
+
+<span class="sd">    This function returns the score of the model.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">            model:</span>
+<span class="sd">                    Best fit model on the training data</span>
+<span class="sd">            test_data:</span>
+<span class="sd">                    Test data to run the model on and generate scores</span>
+<span class="sd">            imputer:</span>
+<span class="sd">                    imputer used while preparing train data</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    final_mse, final_rmse</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X_test</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;median_house_value&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">y_test</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="s2">&quot;median_house_value&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">X_test_num</span> <span class="o">=</span> <span class="n">X_test</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;ocean_proximity&quot;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">X_test_prepared</span> <span class="o">=</span> <span class="n">imputer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X_test_num</span><span class="p">)</span>
+    <span class="n">X_test_prepared</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">X_test_prepared</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">X_test_num</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">X_test</span><span class="o">.</span><span class="n">index</span>
+    <span class="p">)</span>
+    <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;rooms_per_household&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;total_rooms&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;households&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;bedrooms_per_room&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;total_bedrooms&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;total_rooms&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;population_per_household&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;population&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">X_test_prepared</span><span class="p">[</span><span class="s2">&quot;households&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">X_test_cat</span> <span class="o">=</span> <span class="n">X_test</span><span class="p">[[</span><span class="s2">&quot;ocean_proximity&quot;</span><span class="p">]]</span>
+    <span class="n">X_test_prepared</span> <span class="o">=</span> <span class="n">X_test_prepared</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">X_test_cat</span><span class="p">,</span> <span class="n">drop_first</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="n">final_predictions</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test_prepared</span><span class="p">)</span>
+    <span class="n">final_mse</span> <span class="o">=</span> <span class="n">mean_squared_error</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">final_predictions</span><span class="p">)</span>
+    <span class="n">final_rmse</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">final_mse</span><span class="p">)</span>
+    <span class="c1"># final_mae = mean_absolute_error(y_test, final_predictions)</span>
+
+    <span class="k">return</span> <span class="n">final_mse</span><span class="p">,</span> <span class="n">final_rmse</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Utkarsh-Srivastava.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
