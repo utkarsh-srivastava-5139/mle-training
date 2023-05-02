@@ -105,11 +105,11 @@ else:
 
 
 # Load the test data and the imputer used for transforming training data
-test_data, imputer = hlb.load_test_data(project_path=HERE)
+test_data = hlb.load_test_data(project_path=HERE)
 logger.info("Loaded test data")
 
 # Calculate the model's performance
-final_mse, final_rmse = hlb.model_score(final_model, test_data, imputer)
+final_mse, final_rmse = hlb.model_score(final_model, test_data)
 logger.info("MSE and RMSE calculated")
 
 results = {"Mean Square Error": final_mse, "Root mean square error": final_rmse}
