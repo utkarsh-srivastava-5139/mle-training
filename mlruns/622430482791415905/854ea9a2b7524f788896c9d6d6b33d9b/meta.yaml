@@ -1,0 +1,15 @@
+artifact_uri: file:///home/utkarsh/TAMLEP/mle-training/mlruns/622430482791415905/854ea9a2b7524f788896c9d6d6b33d9b/artifacts
+end_time: 1683005728171
+entry_point_name: ''
+experiment_id: '622430482791415905'
+lifecycle_stage: active
+run_id: 854ea9a2b7524f788896c9d6d6b33d9b
+run_name: model_score
+run_uuid: 854ea9a2b7524f788896c9d6d6b33d9b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1683005728160
+status: 4
+tags: []
+user_id: utkarsh
