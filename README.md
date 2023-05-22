@@ -34,13 +34,13 @@ Use the terminal or an Anaconda Prompt for the following steps:
 
 
 ## To install the housinglib library
-First, download the wheel file from the repo, then run the following command.
+First, download the wheel file from the repo, then run the following command:
 ```
-pip install housinglib-0.1.0-py3-none-any.whl
+python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps housinglib_utkarsh
 ```
-Import the housinglib library by using 
+Check if the housinglib_utkarsh package is installed by entering the following command: 
 ```
-import housinglib
+import housinglib_utkarsh
 ```
 
 ## The scripts folder contains the scripts to download data, train and check scores of the model

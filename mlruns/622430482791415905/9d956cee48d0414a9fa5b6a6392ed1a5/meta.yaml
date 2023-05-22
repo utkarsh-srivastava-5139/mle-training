@@ -1,0 +1,15 @@
+artifact_uri: file:///home/utkarsh/TAMLEP/mle-training/mlruns/622430482791415905/9d956cee48d0414a9fa5b6a6392ed1a5/artifacts
+end_time: 1683005015314
+entry_point_name: ''
+experiment_id: '622430482791415905'
+lifecycle_stage: active
+run_id: 9d956cee48d0414a9fa5b6a6392ed1a5
+run_name: big-slug-915
+run_uuid: 9d956cee48d0414a9fa5b6a6392ed1a5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1683005015296
+status: 4
+tags: []
+user_id: utkarsh
